@@ -5,7 +5,7 @@ function M.setup(opts)
     require("neoconf.util").try(function()
       require("neoconf.config").setup(opts)
       require("neoconf.commands").setup()
-    end)
+    end, "Failed to setu neoconf")
   end
 end
 
