@@ -24,6 +24,10 @@ function M.merge(...)
   return ret
 end
 
+-- see https://github.com/neovim/nvim-lspconfig/blob/8b0f47d851ee5343d38fe194a06ad16b9b9bd086/lua/lspconfig/util.lua#L23C1-L25C4
+local function escape_wildcards(path)
+  return path:gsub("([%[%]%?%*])", "\\%1")
+end
 function M.root_pattern(...)
   -- see https://github.com/neovim/nvim-lspconfig/blob/8b0f47d851ee5343d38fe194a06ad16b9b9bd086/lua/lspconfig/util.lua#L28C2-L44C6
   local patterns = M.tbl_flatten({ ... })
