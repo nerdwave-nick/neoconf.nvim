@@ -3,7 +3,6 @@ local M = {}
 local health_start = vim.health.start or vim.health.report_start
 local health_ok = vim.health.ok or vim.health.report_ok
 local health_warn = vim.health.warn or vim.health.report_warn
-local health_info = vim.health.info or vim.health.report_info
 
 function M.check()
   health_start("neoconf.nvim")
@@ -37,7 +36,9 @@ function M.check_setup()
   local util = require("neoconf.util")
   if vim.fn.has("nvim-0.7.2") == 0 then
     util.error("**neoconf.nvim** requires Neovim >= 0.7.2")
+    return false
   end
+  return true
 end
 
 return M
