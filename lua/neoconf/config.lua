@@ -32,8 +32,6 @@ function M.setup(options)
   M.local_patterns = {}
   M.global_patterns = {}
 
-  require("neoconf.import").setup()
-
   vim.list_extend(M.local_patterns, util.expand(M.options.local_settings))
   vim.list_extend(M.global_patterns, util.expand(M.options.global_settings))
 end
