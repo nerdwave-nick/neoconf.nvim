@@ -1,5 +1,6 @@
 local Config = require("neoconf.config")
 
+local validate = vim.validate
 local M = {}
 local uv = vim.uv or vim.loop
 M.islist = vim.islist or vim.tbl_islist
@@ -24,13 +25,18 @@ function M.merge(...)
   return ret
 end
 
+local nvim_eleven = vim.fn.has("nvim-0.11") == 1
+local function tbl_flatten(t)
+  --- @diagnostic disable-next-line:deprecated
+  return nvim_eleven and vim.iter(t):flatten(math.huge):totable() or vim.tbl_flatten(t)
+end
 -- see https://github.com/neovim/nvim-lspconfig/blob/8b0f47d851ee5343d38fe194a06ad16b9b9bd086/lua/lspconfig/util.lua#L23C1-L25C4
 local function escape_wildcards(path)
   return path:gsub("([%[%]%?%*])", "\\%1")
 end
 function M.root_pattern(...)
   -- see https://github.com/neovim/nvim-lspconfig/blob/8b0f47d851ee5343d38fe194a06ad16b9b9bd086/lua/lspconfig/util.lua#L28C2-L44C6
-  local patterns = M.tbl_flatten({ ... })
+  local patterns = tbl_flatten({ ... })
   return function(startpath)
     startpath = M.strip_archive_subpath(startpath)
     for _, pattern in ipairs(patterns) do
@@ -310,6 +316,44 @@ end
 
 function M.info(msg)
   M.notify(msg, vim.log.levels.INFO)
+end
+-- For zipfile: or tarfile: virtual paths, returns the path to the archive.
+-- Other paths are returned unaltered.
+function M.strip_archive_subpath(path)
+  -- Matches regex from zip.vim / tar.vim
+  path = vim.fn.substitute(path, "zipfile://\\(.\\{-}\\)::[^\\\\].*$", "\\1", "")
+  path = vim.fn.substitute(path, "tarfile:\\(.\\{-}\\)::.*$", "\\1", "")
+  return path
+end
+
+---
+---
+---
+--- Deprecated: Remove these functions when we drop support for legacy configs:
+---
+---
+---
+
+--- Deprecated in Nvim 0.11
+function M.search_ancestors(startpath, func)
+  if nvim_eleven then
+    validate("func", func, "function")
+  end
+  if func(startpath) then
+    return startpath
+  end
+  local guard = 100
+  for path in vim.fs.parents(startpath) do
+    -- Prevent infinite recursion if our algorithm breaks
+    guard = guard - 1
+    if guard == 0 then
+      return
+    end
+
+    if func(path) then
+      return path
+    end
+  end
 end
 
 return M
