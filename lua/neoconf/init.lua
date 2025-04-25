@@ -5,7 +5,6 @@ function M.setup(opts)
     require("neoconf.util").try(function()
       require("neoconf.config").setup(opts)
       require("neoconf.commands").setup()
-      require("neoconf.plugins").setup()
     end)
   end
 end

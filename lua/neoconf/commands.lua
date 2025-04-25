@@ -6,9 +6,6 @@ local M = {}
 
 function M.setup()
   local commands = {
-    lsp = function()
-      require("neoconf.view").show_lsp_settings()
-    end,
     show = function()
       require("neoconf.view").show_settings()
     end,
@@ -45,19 +42,6 @@ function M.setup()
   })
 
   local group = vim.api.nvim_create_augroup("Neoconf", { clear = true })
-
-  if Config.options.live_reload then
-    vim.api.nvim_create_autocmd("BufWritePost", {
-      pattern = Util.file_patterns({ autocmd = true }),
-      group = group,
-      callback = function(event)
-        local fname = Util.fqn(event.match)
-        -- clear cached settings for this file
-        Settings.clear(fname)
-        require("neoconf.plugins").fire("on_update", fname)
-      end,
-    })
-  end
 
   if Config.options.filetype_jsonc then
     if vim.g.do_legacy_filetype then

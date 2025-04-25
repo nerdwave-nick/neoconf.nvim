@@ -25,7 +25,24 @@ function M.merge(...)
 end
 
 function M.root_pattern(...)
-  return require("lspconfig.util").root_pattern(...)
+  -- see https://github.com/neovim/nvim-lspconfig/blob/8b0f47d851ee5343d38fe194a06ad16b9b9bd086/lua/lspconfig/util.lua#L28C2-L44C6
+  local patterns = M.tbl_flatten({ ... })
+  return function(startpath)
+    startpath = M.strip_archive_subpath(startpath)
+    for _, pattern in ipairs(patterns) do
+      local match = M.search_ancestors(startpath, function(path)
+        for _, p in ipairs(vim.fn.glob(table.concat({ escape_wildcards(path), pattern }, "/"), true, true)) do
+          if vim.uv.fs_stat(p) then
+            return path
+          end
+        end
+      end)
+
+      if match ~= nil then
+        return match
+      end
+    end
+  end
 end
 
 function M.find_git_ancestor(...)
@@ -33,40 +50,13 @@ function M.find_git_ancestor(...)
 end
 
 function M.has_lspconfig(server)
-  return vim.tbl_contains(require("lspconfig.util").available_servers(), server)
-end
-
----@param opts { on_config: fun(config, root_dir:string, original_config), root_dir: fun(), name: string }
-function M.on_config(opts)
-  local lsputil = require("lspconfig.util")
-  local hook = lsputil.add_hook_before
-
-  lsputil.on_setup = hook(lsputil.on_setup, function(initial_config)
-    if opts.on_config then
-      initial_config.on_new_config = hook(
-        initial_config.on_new_config,
-        M.protect(function(config, root_dir)
-          opts.on_config(config, root_dir, initial_config)
-        end, "Failed to run client.before_init" .. (opts.name and (" for " .. opts.name) or ""))
-      )
+  local servers = {}
+  for s, config in pairs(vim.lsp.config) do
+    if config ~= nil then
+      table.insert(servers, s)
     end
-    if opts.root_dir then
-      local root_dir = initial_config.root_dir
-      initial_config.root_dir = function(...)
-        local b = root_dir and root_dir(...)
-        if not b then
-          return
-        end
-
-        local a = opts.root_dir(...)
-
-        if a and b then
-          return M.pick_root_dir(a, b)
-        end
-        return a or b
-      end
-    end
-  end)
+  end
+  return vim.tbl_contains(servers, server)
 end
 
 function M.pick_root_dir(a, b)
